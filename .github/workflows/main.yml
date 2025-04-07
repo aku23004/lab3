@@ -1,0 +1,33 @@
+name: congra
+
+on: pull_request_target
+
+jobs:
+  congratulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            // Get a list of all pull requests created by the PR opener
+            const creator = context.payload.sender.login
+            const opts = github.rest.pulls.list.endpoint.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all'
+            })
+            const prs = await github.paginate(opts)
+
+            // Check if this is the first pull request by the user
+            const userPRs = prs.filter(pr => pr.user.login === creator)
+            const isFirstPR = userPRs.length === 1
+
+            // If it's the user's first PR, congratulate them
+            if (isFirstPR) {
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `Congratulations on opening your first pull request!`
+              })
+            }
